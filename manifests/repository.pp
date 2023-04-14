@@ -40,130 +40,135 @@ class bareos::repository (
     # note the .com
     $address = "download.bareos.com/bareos/release/${release}/"
   } else {
-    $address = "download.bareos.org/bareos/release/${release}/"
-  }
-
-  $os = $facts['os']['name']
-  $osrelease = $facts['os']['release']['full']
-  $osmajrelease = $facts['os']['release']['major']
-
-  if $gpg_key_fingerprint {
-    $_gpg_key_fingerprint = $gpg_key_fingerprint
-  } elsif versioncmp($release, '22') == 0 {
-    # >= bareos 22
-    $_gpg_key_fingerprint = '8283 4CF0 02D8 9BA5 5C1E  D0AA 42DA 24A6 DFEF 9127'
-  } elsif versioncmp($release, '21') == 0 {
-    # == bareos 21
-    $_gpg_key_fingerprint = '91DA 1DC3 564A E20A 76C4  CA88 E019 57D6 C9FE D482'
-  } elsif versioncmp($release, '20') == 0 {
-    # == bareos 20
-    $_gpg_key_fingerprint = 'C68B 001F 74D2 F202 43D0 B7A2 0CCB A537 DBE0 83A6'
-  } else {
-    notify { 'Unsupported Bareos version':
-      message  => 'You are using a no longer supported Bareos version!',
-    }
-    # >= bareos-18.2
-    if $subscription {
-      $_gpg_key_fingerprint = '641A 1497 F1B1 1BEA 945F 840F E5D8 82B2 8657 AE28'
+    if $os  == 'Ubuntu' {
+      if $osrelease in ['22.04'] and $release in ['22'] {
+        $address = "download.bareos.org/current/xUbuntu_${release}/"
+      }
     } else {
-      $_gpg_key_fingerprint = 'A0CF E15F 71F7 9857 4AB3 63DD 1182 83D9 A786 2CEE'
+      $address = "download.bareos.org/bareos/release/${release}/"
     }
-  }
 
-  $yum_username = $username ? {
-    undef   => 'absent',
-    default => $username,
-  }
-  $yum_password = $password ? {
-    undef   => 'absent',
-    default => $password,
-  }
+    $os = $facts['os']['name']
+    $osrelease = $facts['os']['release']['full']
+    $osmajrelease = $facts['os']['release']['major']
 
-  case $os {
-    /(?i:redhat|centos|rocky|almalinux|fedora|virtuozzolinux|amazon)/: {
-      $url = "${scheme}${address}"
-      case $os {
-        'RedHat', 'VirtuozzoLinux': {
-          $location = "${url}RHEL_${osmajrelease}"
-        }
-        'Centos', 'Rocky', 'AlmaLinux': {
-          if versioncmp($release, '21') >= 0 and versioncmp($osmajrelease, '8') >= 0 {
-            $location = "${url}EL_${osmajrelease}"
-          } else {
-            $location = "${url}CentOS_${osmajrelease}"
-          }
-        }
-        'Fedora': {
-          $location = "${url}Fedora_${osmajrelease}"
-        }
-        'Amazon': {
-          case $osmajrelease {
-            '2': {
-              $location = "${url}RHEL_7"
-            }
-            default: {
-              fail('Operatingsystem is not supported by this module')
-            }
-          }
-        }
-        default: {
-          fail('Operatingsystem is not supported by this module')
-        }
+    if $gpg_key_fingerprint {
+      $_gpg_key_fingerprint = $gpg_key_fingerprint
+    } elsif versioncmp($release, '22') == 0 {
+      # >= bareos 22
+      $_gpg_key_fingerprint = '8283 4CF0 02D8 9BA5 5C1E  D0AA 42DA 24A6 DFEF 9127'
+    } elsif versioncmp($release, '21') == 0 {
+      # == bareos 21
+      $_gpg_key_fingerprint = '91DA 1DC3 564A E20A 76C4  CA88 E019 57D6 C9FE D482'
+    } elsif versioncmp($release, '20') == 0 {
+      # == bareos 20
+      $_gpg_key_fingerprint = 'C68B 001F 74D2 F202 43D0 B7A2 0CCB A537 DBE0 83A6'
+    } else {
+      notify { 'Unsupported Bareos version':
+        message  => 'You are using a no longer supported Bareos version!',
       }
-      yumrepo { 'bareos':
-        name     => 'bareos',
-        descr    => 'Bareos Repository',
-        username => $yum_username,
-        password => $yum_password,
-        baseurl  => $location,
-        gpgcheck => '1',
-        gpgkey   => "${location}/repodata/repomd.xml.key",
-        priority => '1',
-      }
-    }
-    /(?i:debian|ubuntu)/: {
+      # >= bareos-18.2
       if $subscription {
-        $url = "${scheme}${username}:${password}@${address}"
+        $_gpg_key_fingerprint = '641A 1497 F1B1 1BEA 945F 840F E5D8 82B2 8657 AE28'
       } else {
+        $_gpg_key_fingerprint = 'A0CF E15F 71F7 9857 4AB3 63DD 1182 83D9 A786 2CEE'
+      }
+    }
+
+    $yum_username = $username ? {
+      undef   => 'absent',
+      default => $username,
+    }
+    $yum_password = $password ? {
+      undef   => 'absent',
+      default => $password,
+    }
+
+    case $os {
+      /(?i:redhat|centos|rocky|almalinux|fedora|virtuozzolinux|amazon)/: {
         $url = "${scheme}${address}"
-      }
-      if $os  == 'Ubuntu' {
-        unless $osrelease in ['12.04', '14.04', '16.04', '18.04', '20.04', '22.04'] {
-          fail('Only Ubunutu LTS Versions are supported')
+        case $os {
+          'RedHat', 'VirtuozzoLinux': {
+            $location = "${url}RHEL_${osmajrelease}"
+          }
+          'Centos', 'Rocky', 'AlmaLinux': {
+            if versioncmp($release, '21') >= 0 and versioncmp($osmajrelease, '8') >= 0 {
+              $location = "${url}EL_${osmajrelease}"
+            } else {
+              $location = "${url}CentOS_${osmajrelease}"
+            }
+          }
+          'Fedora': {
+            $location = "${url}Fedora_${osmajrelease}"
+          }
+          'Amazon': {
+            case $osmajrelease {
+              '2': {
+                $location = "${url}RHEL_7"
+              }
+              default: {
+                fail('Operatingsystem is not supported by this module')
+              }
+            }
+          }
+          default: {
+            fail('Operatingsystem is not supported by this module')
+          }
         }
-        $location = "${url}xUbuntu_${osrelease}"
-      } else {
-        if $osmajrelease == '10' {
-          $location = "${url}Debian_${osmajrelease}"
+        yumrepo { 'bareos':
+          name     => 'bareos',
+          descr    => 'Bareos Repository',
+          username => $yum_username,
+          password => $yum_password,
+          baseurl  => $location,
+          gpgcheck => '1',
+          gpgkey   => "${location}/repodata/repomd.xml.key",
+          priority => '1',
+        }
+      }
+      /(?i:debian|ubuntu)/: {
+        if $subscription {
+          $url = "${scheme}${username}:${password}@${address}"
         } else {
-          $location = "${url}Debian_${osmajrelease}.0"
+          $url = "${scheme}${address}"
         }
-      }
-      if $subscription {
-        # release key file is not avaiable without login and
-        # apt-key cannot handle username and password in URI
-        $key = {
-          id => regsubst($_gpg_key_fingerprint, ' ', '', 'G'),
+        if $os  == 'Ubuntu' {
+          unless $osrelease in ['12.04', '14.04', '16.04', '18.04', '20.04', '22.04'] {
+            fail('Only Ubunutu LTS Versions are supported')
+          }
+          $location = "${url}xUbuntu_${osrelease}"
+        } else {
+          if $osmajrelease == '10' {
+            $location = "${url}Debian_${osmajrelease}"
+          } else {
+            $location = "${url}Debian_${osmajrelease}.0"
+          }
         }
-      } else {
-        $key = {
-          id     => regsubst($_gpg_key_fingerprint, ' ', '', 'G'),
-          source => "${location}/Release.key",
+        if $subscription {
+          # release key file is not avaiable without login and
+          # apt-key cannot handle username and password in URI
+          $key = {
+            id => regsubst($_gpg_key_fingerprint, ' ', '', 'G'),
+          }
+        } else {
+          $key = {
+            id     => regsubst($_gpg_key_fingerprint, ' ', '', 'G'),
+            source => "${location}/Release.key",
+          }
         }
-      }
 
-      include apt
-      ::apt::source { 'bareos':
-        location => $location,
-        release  => '/',
-        repos    => '',
-        key      => $key,
+        include apt
+        ::apt::source { 'bareos':
+          location => $location,
+          release  => '/',
+          repos    => '',
+          key      => $key,
+        }
+        Apt::Source['bareos'] -> Package <| provider == 'apt' |>
+        Class['Apt::Update']  -> Package <| provider == 'apt' |>
       }
-      Apt::Source['bareos'] -> Package <| provider == 'apt' |>
-      Class['Apt::Update']  -> Package <| provider == 'apt' |>
-    }
-    default: {
-      fail('Operatingsystem is not supported by this module')
+      default: {
+        fail('Operatingsystem is not supported by this module')
+      }
     }
   }
-}
