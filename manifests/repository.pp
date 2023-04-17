@@ -28,6 +28,10 @@ class bareos::repository (
   Optional[String]       $password            = undef,
   Boolean                $https               = true,
 ) {
+  $os = $facts['os']['name']
+  $osrelease = $facts['os']['release']['full']
+  $osmajrelease = $facts['os']['release']['major']
+
   if $https {
     $scheme = 'https://'
   } else {
@@ -42,15 +46,11 @@ class bareos::repository (
   } else {
     if $os  == 'Ubuntu' {
       if $osrelease in ['22.04'] and $release in ['22'] {
-        $address = "download.bareos.org/current/xUbuntu_${release}/"
+        $address = 'download.bareos.org/current/'
       }
     } else {
       $address = "download.bareos.org/bareos/release/${release}/"
     }
-
-    $os = $facts['os']['name']
-    $osrelease = $facts['os']['release']['full']
-    $osmajrelease = $facts['os']['release']['major']
 
     if $gpg_key_fingerprint {
       $_gpg_key_fingerprint = $gpg_key_fingerprint
