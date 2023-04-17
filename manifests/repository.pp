@@ -172,3 +172,4 @@ class bareos::repository (
       }
     }
   }
+}
