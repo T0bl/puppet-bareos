@@ -44,13 +44,9 @@ class bareos::repository (
     # note the .com
     $address = "download.bareos.com/bareos/release/${release}/"
   } else {
-    if $os  == 'Ubuntu' {
-      if $osrelease in ['22.04'] and $release in ['22'] {
-        $address = 'download.bareos.org/current/'
-      }
-    } else {
-      $address = "download.bareos.org/bareos/release/${release}/"
-    }
+    # without subscription only current release available.
+    $address = 'download.bareos.org/current/'
+  }
 
     if $gpg_key_fingerprint {
       $_gpg_key_fingerprint = $gpg_key_fingerprint
